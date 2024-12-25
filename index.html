@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sensor Dashboard</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- PapaParse CDN (untuk export CSV) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto p-6">
+        <h1 class="text-3xl font-bold text-center mb-6">Real-Time Sensor Dashboard</h1>
+
+        <!-- Card for each sensor -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <!-- Max30102 (Heart Rate) -->
+            <div class="bg-white p-4 rounded-lg shadow-md">
+                <h2 class="text-xl font-semibold mb-4">Max30102 Heart Rate Sensor</h2>
+                <div id="heart-rate" class="text-2xl">Heart Rate: 0 bpm</div>
+                <canvas id="max30102-heart-rate-chart" class="mt-4"></canvas>
+            </div>
+
+            <!-- Max30102 (SpO2) -->
+            <div class="bg-white p-4 rounded-lg shadow-md">
+                <h2 class="text-xl font-semibold mb-4">Max30102 SpO2 Sensor</h2>
+                <div id="spo2" class="text-2xl">SpO2: 0%</div>
+                <canvas id="max30102-spo2-chart" class="mt-4"></canvas>
+            </div>
+
+            <!-- SW-420 (Vibration Sensor) -->
+            <div class="bg-white p-4 rounded-lg shadow-md">
+                <h2 class="text-xl font-semibold mb-4">SW-420 Vibration Sensor</h2>
+                <div id="vibration-status" class="text-2xl">Status: Not Detected</div>
+                <canvas id="vibration-chart" class="mt-4"></canvas>
+            </div>
+
+            <!-- BMP280 (Pressure Sensor) -->
+            <div class="bg-white p-4 rounded-lg shadow-md">
+                <h2 class="text-xl font-semibold mb-4">BMP280 Sensor</h2>
+                <div id="pressure" class="text-2xl">Pressure: 0 mmHg</div>
+                <canvas id="bmp280-chart" class="mt-4"></canvas>
+            </div>
+
+            <!-- DHT11 (Temperature & Humidity) -->
+            <div class="bg-white p-4 rounded-lg shadow-md">
+                <h2 class="text-xl font-semibold mb-4">DHT11 Sensor</h2>
+                <div id="temperature-dht" class="text-2xl">Temperature: 0°C</div>
+                <div id="humidity" class="text-2xl">Humidity: 0%</div>
+                <canvas id="dht11-chart" class="mt-4"></canvas>
+            </div>
+        </div>
+
+        <!-- Combined Graph -->
+        <div class="bg-white p-6 rounded-lg shadow-md mt-8">
+            <h2 class="text-2xl font-semibold mb-4">Combined Sensor Data</h2>
+            <canvas id="combined-chart"></canvas>
+        </div>
+
+        <!-- Data Table -->
+        <div class="bg-white p-6 rounded-lg shadow-md mt-8">
+            <h2 class="text-2xl font-semibold mb-4">Sensor Data Table</h2>
+            <table id="sensor-data" class="min-w-full table-auto">
+                <thead>
+                    <tr>
+                        <th class="px-4 py-2">Timestamp</th>
+                        <th class="px-4 py-2">Heart Rate</th>
+                        <th class="px-4 py-2">SpO2</th>
+                        <th class="px-4 py-2">Vibration Status</ <th class="px-4 py-2">Pressure</th>
+                        <th class="px-4 py-2">Temperature</th>
+                        <th class="px-4 py-2">Humidity</th>
+                        <th class="px-4 py-2">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="sensor-data-body">
+                    <!-- Dynamic rows will be inserted here -->
+                </tbody>
+            </table>
+            <button id="download-csv" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg">Download CSV</button>
+        </div>
+    </div>
+
+    <script>
+        // URL for the AWS IoT Core JSON data
+        const jsonUrl = "https://kelompok1wahyuiot.s3.ap-southeast-1.amazonaws.com/kuncikel1.json";
+
+        let sensorData = []; // To store data for CSV export
+
+        // Initialize Chart.js charts
+        const max30102HeartRateChart = new Chart(document.getElementById('max30102-heart-rate-chart'), { type: 'line', data: { labels: [], datasets: [{ label: 'Heart Rate (bpm)', data: [] }] } });
+        const max30102SpO2Chart = new Chart(document.getElementById('max30102-spo2-chart'), { type: 'line', data: { labels: [], datasets: [{ label: 'SpO2 (%)', data: [] }] } });
+        const vibrationChart = new Chart(document.getElementById('vibration-chart'), { type: 'line', data: { labels: [], datasets: [{ label: 'Vibration Status', data: [] }] } });
+        const bmp280Chart = new Chart(document.getElementById('bmp280-chart'), { type: 'line', data: { labels: [], datasets: [{ label: 'Pressure (mmHg)', data: [] }] } });
+        const dht11Chart = new Chart(document.getElementById('dht11-chart'), { type: 'line', data: { labels: [], datasets: [{ label: 'Temperature (°C)', data: [] }, { label: 'Humidity (%)', data: [] }] } });
+        const combinedChart = new Chart(document.getElementById('combined-chart'), { type: 'line', data: { labels: [], datasets: [{ label: 'Heart Rate', data: [] }, { label: 'Temperature', data: [] }, { label: 'Pressure', data: [] }] } });
+
+        // Function to update all data from the JSON
+        function updateData(data) {
+            // Update individual sensor readings
+            document.getElementById('heart-rate').textContent = `Heart Rate: ${data.beatAvg} bpm`;
+            document.getElementById('spo2').textContent = `SpO2: ${data.spO2}%`;
+            document.getElementById('vibration-status').textContent = `Status: ${data.getaran}`;
+            document.getElementById('pressure').textContent = `Pressure: ${data.pressure} mmHg`;
+            document.getElementById('temperature-dht').textContent = `Temperature: ${data.temperature_dht}°C`;
+            document.getElementById('humidity').textContent = `Humidity: ${data.humidity}%`;
+
+            // Add data to charts
+            const timestamp = new Date(data.timestamps).toLocaleTimeString();
+            max30102HeartRateChart.data.labels.push(timestamp);
+            max30102HeartRateChart.data.datasets[0].data.push(data.beatAvg);
+            max30102HeartRateChart.update();
+
+            max30102SpO2Chart.data.labels.push(timestamp);
+            max30102SpO2Chart.data.datasets[0].data.push(data.spO2);
+            max30102SpO2Chart.update();
+
+            vibrationChart.data.labels.push(timestamp);
+            vibrationChart.data.datasets[0].data.push(data.getaran === "Detected" ? 1 : 0);
+            vibrationChart.update();
+
+            bmp280Chart.data.labels.push(timestamp);
+            bmp280Chart.data.datasets[0].data.push(data.pressure);
+            bmp280Chart.update();
+
+            dht11Chart.data.labels.push(timestamp);
+            dht11Chart.data.datasets[0].data.push(data.temperature_dht);
+            dht11Chart.data.datasets[1].data.push(data.humidity);
+            dht11Chart.update();
+
+            combinedChart.data.labels.push(timestamp);
+            combinedChart.data.datasets[0].data.push(data.beatAvg);
+            combinedChart.data.datasets[1].data.push(data.temperature_dht);
+            combinedChart.data.datasets[2].data.push(data.pressure);
+            combinedChart.update();
+
+            // Add data to table
+            const row = document.createElement("tr");
+            row.innerHTML = `
+ <td class="px-4 py-2">${timestamp}</td>
+                <td class="px-4 py-2">${data.beatAvg}</td>
+                <td class="px-4 py-2">${data.spO2}</td>
+                <td class="px-4 py-2">${data.getaran}</td>
+                <td class="px-4 py-2">${data.pressure}</td>
+                <td class="px-4 py-2">${data.temperature_dht}</td>
+                <td class="px-4 py-2">${data.humidity}</td>
+                <td class="px-4 py-2"><button class="text-blue-500">Details</button></td>
+            `;
+            document.getElementById('sensor-data-body').appendChild(row);
+
+            // Save data for CSV export
+            sensorData.push(data);
+        }
+
+        // Fetch data every 3 seconds from AWS
+        setInterval(async () => {
+            const response = await fetch(jsonUrl);
+            const data = await response.json();
+            updateData(data);
+        }, 3000);
+
+        // Download CSV
+        document.getElementById('download-csv').addEventListener('click', () => {
+            const csv = Papa.unparse(sensorData);
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'sensor_data.csv';
+            link.click();
+        });
+    </script>
+</body>
+</html>
