@@ -1,0 +1,69 @@
+[System]
+Name='FuzzyWahyuMAMDANINw'
+Type='mamdani'
+Version=2.0
+NumInputs=5
+NumOutputs=1
+NumRules=0
+AndMethod='min'
+OrMethod='max'
+ImpMethod='min'
+AggMethod='max'
+DefuzzMethod='centroid'
+
+[Input1]
+Name='input1'
+Range=[55 115]
+NumMFs=4
+MF1='Rileks':'trapmf',[58 60 70 72]
+MF2='Tenang':'trapmf',[68 70 90 92]
+MF3='Cemas':'trapmf',[88 90 100 102]
+MF4='Tegang':'trapmf',[98 100 110 112]
+
+[Input2]
+Name='input2'
+Range=[65 155]
+NumMFs=4
+MF1='Rileks':'trapmf',[68.14 70.23 75.47 77.56]
+MF2='Tenang':'trapmf',[73.37 75.47 85.93 88.02]
+MF3='Cemas':'trapmf',[89.07 91.16 112.1 114.2]
+MF4='Tegang':'trapmf',[108 110 150 152]
+
+[Input3]
+Name='input3'
+Range=[26 42]
+NumMFs=4
+MF1='Rileks':'trapmf',[34 36 37 39]
+MF2='Tenang':'trapmf',[33 35 36 38]
+MF3='Cemas':'trapmf',[31 33 35 37]
+MF4='Tegang':'trapmf',[29 31 33 35]
+
+[Input4]
+Name='input4'
+Range=[93 104]
+NumMFs=4
+MF1='Rileks':'trapmf',[98 99 100 101]
+MF2='Tenang':'trapmf',[97 98 99 100]
+MF3='Cemas':'trapmf',[96 97 98 99]
+MF4='Tegang':'trapmf',[94 95 97 98]
+
+[Input5]
+Name='input5'
+Range=[55 115]
+NumMFs=4
+MF1='Rileks':'trapmf',[58 60 70 72]
+MF2='Tenang':'trapmf',[68 70 90 92]
+MF3='Cemas':'trapmf',[88 90 100 102]
+MF4='Tegang':'trapmf',[98 100 110 112]
+
+[Output1]
+Name='output1'
+Range=[0 100]
+NumMFs=5
+MF1='Ringan':'trapmf',[0 5 20 25]
+MF2='Sedang':'trapmf',[15 20 40 45]
+MF3='Berat':'trapmf',[35 40 60 65]
+MF4='Sangat_Berat':'trapmf',[55 60 80 85]
+MF5='Krisis':'trapmf',[75 80 95 100]
+
+[Rules]
